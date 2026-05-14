@@ -1110,8 +1110,12 @@ function quickEditTerr(username) {
 // ═══════════════════════════════════════════════════════
 async function renderPermPanel() {
   S.sheet = await DB.getActiveSheet(); S.perms = await DB.getPerms();
-  $('permNoSheet').style.display = S.sheet ? 'none'  : 'block';
-  $('permContent').style.display = S.sheet ? 'block' : 'none';
+  $('permNoSheet').style.display = 'none';
+  $('permContent').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Column access will be configurable once a sheet is uploaded. Territory and filter permissions below are already saved.</div>';
+    $('filterCol').innerHTML = '';
+  }
   fillUserDropdowns();
 }
 
