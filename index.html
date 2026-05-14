@@ -1121,7 +1121,14 @@ async function renderPermPanel() {
 
 function loadPermEditor() {
   const username = $('permUserSel').value;
-  if (!username || !S.sheet) { $('permEditor').style.display = 'none'; return; }
+  if (!username) { $('permEditor').style.display = 'none'; return; }
+  $('permEditor').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:11px">Upload a sheet first to configure column access.</div>';
+    $('filterCol').innerHTML = '';
+    S.tempFilters = [...((S.perms[username]||{}).filters||[])];
+    renderFilterTags(); return;
+  }
   $('permEditor').style.display = 'block';
   const p = S.perms[username] || { columns:[...S.sheet.columns], filters:[] };
   S.tempFilters = [...(p.filters || [])];
