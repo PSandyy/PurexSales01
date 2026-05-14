@@ -1208,10 +1208,27 @@ async function clientFilter(username) {
 let _myData = null;
 
 async function loadMyData() {
-  S.sheet   = await DB.getActiveSheet();
-  S.perms   = await DB.getPerms();
+S.perms   = await DB.getPerms();
   S.terrCol = await DB.getSetting('terrCol');
-  if (!S.sheet) { $('myNoPerms').style.display = 'block'; $('myContent').style.display = 'none'; return; }
+  const allSheets = await DB.getAllSheets();
+  allSheets.sort((a,b) => new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const sel = $('mySheetSel');
+  if (allSheets.length > 1) {
+    $('mySheetSelector').style.display = 'block';
+    const curId = sel.value ? parseInt(sel.value) : (await DB.getActiveSheetId());
+    sel.innerHTML = allSheets.map(s =>
+      `<option value="${s.id}" ${s.id==curId?'selected':''}>${s.fileName} / ${s.sheetName} (${new Date(s.uploadedAt).toLocaleDateString()})</option>`
+    ).join('');
+    if (!sel._bound) {
+      sel.addEventListener('change', loadMyData);
+      sel._bound = true;
+    }
+    S.sheet = allSheets.find(s => s.id == parseInt(sel.value)) || allSheets[0];
+  } else {
+    $('mySheetSelector').style.display = 'none';
+    S.sheet = allSheets[0] || null;
+  }
+  if (!S.sheet) { $('myNoPerms').style.display='block'; $('myContent').style.display='none'; return; }
   const { rows, cols } = await clientFilter(S.user.username);
   if (!rows.length) { $('myNoPerms').style.display = 'block'; $('myContent').style.display = 'none'; return; }
   _myData = { rows, cols };
