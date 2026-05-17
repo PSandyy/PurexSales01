@@ -399,7 +399,14 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
     </div>
 
     <!-- MY DATA -->
-    <div class="panel" id="panel-mydata">
+    <div class="panel" id="panel-mydata"><div id="mySheetSelector" style="display:none;margin-bottom:14px">
+  <div class="card" style="padding:12px 14px">
+    <div class="row" style="gap:10px;align-items:center">
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap">Viewing sheet:</span>
+      <select id="mySheetSel" style="flex:1"></select>
+    </div>
+  </div>
+</div>
       <div id="myNoPerms" style="display:none">
         <div class="empty"><div class="ei">🔒</div><p>No data has been shared with you yet.<br>Contact your administrator.</p></div>
       </div>
@@ -1102,14 +1109,24 @@ function quickEditTerr(username) {
 // ═══════════════════════════════════════════════════════
 async function renderPermPanel() {
   S.sheet = await DB.getActiveSheet(); S.perms = await DB.getPerms();
-  $('permNoSheet').style.display = S.sheet ? 'none'  : 'block';
-  $('permContent').style.display = S.sheet ? 'block' : 'none';
+  $('permNoSheet').style.display = 'none';
+  $('permContent').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Column access will be configurable once a sheet is uploaded. Territory and filter permissions below are already saved.</div>';
+    $('filterCol').innerHTML = '';
+  }
   fillUserDropdowns();
 }
-
 function loadPermEditor() {
-  const username = $('permUserSel').value;
-  if (!username || !S.sheet) { $('permEditor').style.display = 'none'; return; }
+const username = $('permUserSel').value;
+  if (!username) { $('permEditor').style.display = 'none'; return; }
+  $('permEditor').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:11px">Upload a sheet first to configure column access.</div>';
+    $('filterCol').innerHTML = '';
+    S.tempFilters = [...((S.perms[username]||{}).filters||[])];
+    renderFilterTags(); return;
+  }
   $('permEditor').style.display = 'block';
   const p = S.perms[username] || { columns:[...S.sheet.columns], filters:[] };
   S.tempFilters = [...(p.filters || [])];
@@ -1146,9 +1163,10 @@ function renderFilterTags() {
 }
 
 async function savePerms() {
+ async function savePerms() {
   const username = $('permUserSel').value; if (!username) return;
-  const columns = [...$('colGrid').querySelectorAll('input:checked')].map(cb => cb.value);
-  if (!columns.length) { toast('Select at least one column','err'); return; }
+  const checkedCols = [...$('colGrid').querySelectorAll('input:checked')].map(cb => cb.value);
+  const columns = checkedCols.length ? checkedCols : ((S.perms[username]||{}).columns || []);
   const perms = await DB.getPerms();
   const territories = perms[username]?.territories || [];
   perms[username] = { columns, filters: S.tempFilters, territories };
@@ -1200,10 +1218,27 @@ async function clientFilter(username) {
 let _myData = null;
 
 async function loadMyData() {
-  S.sheet   = await DB.getActiveSheet();
-  S.perms   = await DB.getPerms();
+ S.perms   = await DB.getPerms();
   S.terrCol = await DB.getSetting('terrCol');
-  if (!S.sheet) { $('myNoPerms').style.display = 'block'; $('myContent').style.display = 'none'; return; }
+  const allSheets = await DB.getAllSheets();
+  allSheets.sort((a,b) => new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const sel = $('mySheetSel');
+  if (allSheets.length > 1) {
+    $('mySheetSelector').style.display = 'block';
+    const curId = sel.value ? parseInt(sel.value) : (await DB.getActiveSheetId());
+    sel.innerHTML = allSheets.map(s =>
+      `<option value="${s.id}" ${s.id==curId?'selected':''}>${s.fileName} / ${s.sheetName} (${new Date(s.uploadedAt).toLocaleDateString()})</option>`
+    ).join('');
+    if (!sel._bound) {
+      sel.addEventListener('change', loadMyData);
+      sel._bound = true;
+    }
+    S.sheet = allSheets.find(s => s.id == parseInt(sel.value)) || allSheets[0];
+  } else {
+    $('mySheetSelector').style.display = 'none';
+    S.sheet = allSheets[0] || null;
+  }
+  if (!S.sheet) { $('myNoPerms').style.display='block'; $('myContent').style.display='none'; return; }
   const { rows, cols } = await clientFilter(S.user.username);
   if (!rows.length) { $('myNoPerms').style.display = 'block'; $('myContent').style.display = 'none'; return; }
   _myData = { rows, cols };
