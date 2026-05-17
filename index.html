@@ -825,7 +825,46 @@ async function saveNewUser() {
   renderUsersPanel(); fillUserDropdowns();
   toast(`User "${displayName}" created`,'ok');
 }
+function openEditUserModal(id) {
+  const u = S.allUsers.find(x => x.id === id);
+  if (!u) return;
+  $('editUserId').value      = u.id;
+  $('editUsername').value    = u.username;
+  $('editDisplayName').value = u.displayName;
+  $('editPassword').value    = '';
+  $('editRole').value        = u.role;
+  const adminCount = S.allUsers.filter(x => x.role === 'admin').length;
+  $('editRole').disabled = (u.role === 'admin' && adminCount <= 1);
+  $('editUserModal').classList.add('open');
+}
 
+async function saveEditUser() {
+  const id          = parseInt($('editUserId').value);
+  const displayName = $('editDisplayName').value.trim();
+  const password    = $('editPassword').value;
+  const role        = $('editRole').value;
+  if (!displayName) { toast('Display name required','err'); return; }
+  if (password && password.length < 6) { toast('Password min. 6 characters','err'); return; }
+  const users = await DB.getUsers();
+  const idx   = users.findIndex(u => u.id === id);
+  if (idx === -1) { toast('User not found','err'); return; }
+  users[idx].displayName = displayName;
+  users[idx].role        = role;
+  if (password) users[idx].password = password;
+  await DB.saveUsers(users);
+  S.allUsers = users;
+  if (S.user.id === id) {
+    S.user.displayName = displayName;
+    S.user.role        = role;
+    sessionStorage.setItem('dg_session', JSON.stringify(S.user));
+    $('hUser').textContent = displayName;
+    $('hRole').textContent = role;
+    $('hRole').className   = 'role-chip' + (role === 'admin' ? '' : ' user');
+  }
+  $('editUserModal').classList.remove('open');
+  renderUsersPanel(); fillUserDropdowns();
+  toast(`User "${displayName}" updated`, 'ok');
+}
 async function deleteUser(id) {
   const users = await DB.getUsers();
   const u = users.find(x => x.id === id);
