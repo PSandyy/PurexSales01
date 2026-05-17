@@ -1341,29 +1341,7 @@ function downloadExcel() {
   XLSX.writeFile(wb, `${S.user.displayName.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`);
   toast('Download started!','ok');
 }
-  <!-- EDIT USER MODAL -->
-<div class="modal-bg" id="editUserModal">
-  <div class="modal">
-    <button class="modal-x" id="editModalClose">✕</button>
-    <div class="modal-title">Edit User</div>
-    <div class="modal-sub">Update display name, password, or role</div>
-    <input type="hidden" id="editUserId">
-    <label>Username</label>
-    <input type="text" id="editUsername" disabled style="opacity:.5;cursor:not-allowed">
-    <label>Display Name</label>
-    <input type="text" id="editDisplayName" placeholder="e.g. John Doe">
-    <label>New Password <span style="color:var(--muted);font-size:10px">(leave blank to keep current)</span></label>
-    <input type="password" id="editPassword" placeholder="min. 6 characters or leave blank">
-    <label>Role</label>
-    <select id="editRole">
-      <option value="user">user</option>
-      <option value="admin">admin</option>
-    </select>
-    <div class="modal-foot">
-      <button class="btn btn-sec" id="editModalCancelBtn">Cancel</button>
-      <button class="btn btn-green" id="editModalSaveBtn">Save Changes →</button>
-    </div>
-  </div>
+ 
 </div>
 </script>
 </body>
