@@ -551,6 +551,7 @@ const DB = {
     if (v) return v;
     const seed = [
       {id:1,username:'admin',displayName:'Administrator',password:'admin123',role:'admin'},
+      {id:2,username:'admin_01', displayName:'CHE Dep', password:'admin0123', role:'admin'},
     ];
     await IDB.kv_set('users', seed);
     return seed;
