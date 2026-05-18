@@ -1110,14 +1110,25 @@ function quickEditTerr(username) {
 // ═══════════════════════════════════════════════════════
 async function renderPermPanel() {
   S.sheet = await DB.getActiveSheet(); S.perms = await DB.getPerms();
-  $('permNoSheet').style.display = S.sheet ? 'none'  : 'block';
-  $('permContent').style.display = S.sheet ? 'block' : 'none';
+  $('permNoSheet').style.display = 'none';
+  $('permContent').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Column access will be configurable once a sheet is uploaded. Territory and filter permissions below are already saved.</div>';
+    $('filterCol').innerHTML = '';
+  }
   fillUserDropdowns();
 }
 
 function loadPermEditor() {
   const username = $('permUserSel').value;
-  if (!username || !S.sheet) { $('permEditor').style.display = 'none'; return; }
+  if (!username) { $('permEditor').style.display = 'none'; return; }
+  $('permEditor').style.display = 'block';
+  if (!S.sheet) {
+    $('colGrid').innerHTML = '<div style="color:var(--muted);font-size:11px">Upload a sheet first to configure column access.</div>';
+    $('filterCol').innerHTML = '';
+    S.tempFilters = [...((S.perms[username]||{}).filters||[])];
+    renderFilterTags(); return;
+  }  
   $('permEditor').style.display = 'block';
   const p = S.perms[username] || { columns:[...S.sheet.columns], filters:[] };
   S.tempFilters = [...(p.filters || [])];
@@ -1155,8 +1166,8 @@ function renderFilterTags() {
 
 async function savePerms() {
   const username = $('permUserSel').value; if (!username) return;
-  const columns = [...$('colGrid').querySelectorAll('input:checked')].map(cb => cb.value);
-  if (!columns.length) { toast('Select at least one column','err'); return; }
+  const checkedCols = [...$('colGrid').querySelectorAll('input:checked')].map(cb => cb.value);
+  const columns = checkedCols.length ? checkedCols : ((S.perms[username]||{}).columns || []);
   const perms = await DB.getPerms();
   const territories = perms[username]?.territories || [];
   perms[username] = { columns, filters: S.tempFilters, territories };
